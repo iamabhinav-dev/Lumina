@@ -50,14 +50,27 @@ from sklearn.preprocessing import MinMaxScaler
 
 warnings.filterwarnings("ignore")
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TIFF_DIR    = os.path.join(ROOT, "data", "tiffs")
-MODEL_DIR   = os.path.join(ROOT, "models", "convlstm")
-OUTPUT_DIR  = os.path.join(ROOT, "outputs", "convlstm")
+# ─── Paths / city config ─────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
 
-FRAMES_NPZ   = os.path.join(MODEL_DIR, "frames.npz")
-SCALER_PKL   = os.path.join(MODEL_DIR, "frame_scaler.pkl")
+import cities as _cities
+
+_parser = argparse.ArgumentParser(description="Prepare ConvLSTM spatial frame sequences")
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+_parser.add_argument("--window", type=int, default=12,
+                     help="Sliding window size in months (default: 12)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+TIFF_DIR    = _cities.get_tiff_dir(CITY, ROOT)
+MODEL_DIR   = _cities.get_convlstm_model_dir(CITY, ROOT)
+OUTPUT_DIR  = _cities.get_convlstm_dir(CITY, ROOT)
+
+FRAMES_NPZ    = os.path.join(MODEL_DIR, "frames.npz")
+SCALER_PKL    = os.path.join(MODEL_DIR, "frame_scaler.pkl")
 METADATA_JSON = os.path.join(MODEL_DIR, "frame_metadata.json")
 
 os.makedirs(MODEL_DIR,  exist_ok=True)
@@ -271,13 +284,9 @@ def print_summary(X_train, y_train, X_test, y_test, scaler) -> None:
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Prepare ConvLSTM spatial frame sequences")
-    parser.add_argument("--window", type=int, default=DEFAULT_WINDOW,
-                        help=f"Sliding window size in months (default: {DEFAULT_WINDOW})")
-    args = parser.parse_args()
-    W = args.window
+    W = ARGS.window
 
-    print(f"\n[ConvLSTM] Step 1 — prepare_frames.py  (window={W})\n")
+    print(f"\n[ConvLSTM] Step 1 — prepare_frames.py  (city={CITY}, window={W})\n")
 
     # 1. Find TIFFs
     entries = find_tiffs()

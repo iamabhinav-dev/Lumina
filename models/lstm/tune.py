@@ -47,10 +47,22 @@ import keras_tuner as kt
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lstm.build_model import build_model
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT       = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SARIMA_DIR = os.path.join(ROOT, "outputs", "sarima")
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "lstm")
+# ─── Paths / city config ─────────────────────────────────────────────────────────────────
+import argparse
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+SARIMA_DIR = _cities.get_sarima_dir(CITY, ROOT)
+OUTPUT_DIR = _cities.get_lstm_dir(CITY, ROOT)
 TUNER_DIR  = os.path.join(OUTPUT_DIR, "tuner")
 
 INPUT_CSV   = os.path.join(SARIMA_DIR, "mean_brightness_clean.csv")

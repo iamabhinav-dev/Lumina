@@ -9,14 +9,16 @@ For each available ntl_YYYY_MM.tif:
   - Compute valid_pixel_ratio : valid_pixels / total_pixels  (used later for cleaning)
   - Also store median_rad and std_rad for reference
 
-Output: outputs/sarima/mean_brightness.csv
+Output: outputs/{city}/sarima/mean_brightness.csv
 
 Usage:
     cd /home/abhinav/Desktop/BTP
     source venv/bin/activate
-    python models/sarima/extract_brightness.py
+    python models/sarima/extract_brightness.py                  # Kharagpur
+    python models/sarima/extract_brightness.py --city kolkata   # Kolkata
 """
 
+import argparse
 import os
 import sys
 
@@ -29,9 +31,17 @@ SRC  = os.path.join(ROOT, "src")
 sys.path.insert(0, SRC)
 
 import preprocess as pp
+import cities as _cities
+
+# ─── CLI ─────────────────────────────────────────────────────────────────────
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
 
 # ─── Output path ─────────────────────────────────────────────────────────────
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "sarima")
+OUTPUT_DIR = _cities.get_sarima_dir(CITY, ROOT)
 OUTPUT_CSV = os.path.join(OUTPUT_DIR, "mean_brightness.csv")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -40,13 +50,13 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # ─── Main extraction ─────────────────────────────────────────────────────────
 
 def extract_mean_brightness() -> pd.DataFrame:
-    dates = pp.get_available_dates()
+    dates = pp.get_available_dates(city=CITY)
     total = len(dates)
     print(f"Found {total} monthly TIFFs. Starting extraction...\n")
 
     rows = []
     for i, (year, month) in enumerate(dates, start=1):
-        tiff_path = pp.get_tiff_path(year, month)
+        tiff_path = pp.get_tiff_path(year, month, city=CITY)
 
         # ── progress indicator ───────────────────────────────────────────────
         label = f"{year}-{month:02d}"
@@ -59,7 +69,7 @@ def extract_mean_brightness() -> pd.DataFrame:
             continue
 
         try:
-            raster = pp.load_raster(year, month)
+            raster = pp.load_raster(year, month, city=CITY)
             arr    = raster["array"]          # 2D float32, NaN where invalid
             stats  = pp.get_stats(arr)
 

@@ -17,9 +17,12 @@ Usage:
     cd /home/abhinav/Desktop/BTP
     source venv/bin/activate
     python models/sarima/eda.py
+    python models/sarima/eda.py --city kolkata
 """
 
+import argparse
 import os
+import sys
 import warnings
 import numpy as np
 import pandas as pd
@@ -34,9 +37,20 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 warnings.filterwarnings("ignore")
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT       = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "sarima")
+# ─── Paths / city config ─────────────────────────────────────────────────────
+SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "src")
+sys.path.insert(0, SRC)
+import cities as _cities
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+OUTPUT_DIR = _cities.get_sarima_dir(CITY, ROOT)
 PLOTS_DIR  = os.path.join(OUTPUT_DIR, "plots")
 INPUT_CSV  = os.path.join(OUTPUT_DIR, "mean_brightness_clean.csv")
 

@@ -21,6 +21,7 @@ Usage:
     python models/sarima/clean_brightness.py
 """
 
+import argparse
 import os
 import sys
 import numpy as np
@@ -30,9 +31,22 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT       = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "sarima")
+# ─── Make src/ importable regardless of cwd ────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+# ─── CLI ────────────────────────────────────────────────────────────────────
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+# ─── Paths ──────────────────────────────────────────────────────────────────────
+OUTPUT_DIR = _cities.get_sarima_dir(CITY, ROOT)
 PLOTS_DIR  = os.path.join(OUTPUT_DIR, "plots")
 INPUT_CSV  = os.path.join(OUTPUT_DIR, "mean_brightness.csv")
 OUTPUT_CSV = os.path.join(OUTPUT_DIR, "mean_brightness_clean.csv")

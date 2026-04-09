@@ -7,34 +7,54 @@ Before running:
   1. Register at https://earthengine.google.com
   2. Create a GCP project and enable Earth Engine API
   3. Run: earthengine authenticate
+
+Usage:
+    python src/download_data.py                    # downloads Kharagpur (default)
+    python src/download_data.py --city kolkata     # downloads Kolkata
 """
+
+import argparse
+import calendar
+import os
+import sys
 
 import ee
 import geemap
-import os
-import calendar
 
-# ─── CONFIG ──────────────────────────────────────────────────────────────────
+# ─── Make src/ importable regardless of cwd ──────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
 
-# Your GEE project ID (from Google Cloud Console)
+import cities as _cities
+
+# ─── CLI ─────────────────────────────────────────────────────────────────────
+_parser = argparse.ArgumentParser(description="Download VIIRS NTL GeoTIFFs from GEE.")
+_parser.add_argument(
+    "--city", default="kharagpur",
+    help="City key defined in src/cities.py  (default: kharagpur)",
+)
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+# ─── City-resolved CONFIG ────────────────────────────────────────────────────
+_city_cfg = _cities.get_city(CITY)
+
+# GEE settings — shared across all cities
 GEE_PROJECT = "voltaic-flag-465406-q9"
+COLLECTION  = "NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG"
+BAND        = "avg_rad"   # average DNB radiance (nW/cm²/sr)
 
-# Kharagpur bounding box [min_lon, min_lat, max_lon, max_lat]
-KHARAGPUR_BBOX = [87.25, 22.30, 87.45, 22.45]
-
-# Time range (NOAA VIIRS DNB monthly starts January 2014)
+# Time range
 START_YEAR = 2014
 END_YEAR   = 2025
 
-# GEE collection and band
-COLLECTION = "NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG"
-BAND       = "avg_rad"  # average DNB radiance (nW/cm²/sr)
+# City-specific values
+BBOX       = _city_cfg["bbox"]   # [min_lon, min_lat, max_lon, max_lat]
+SCALE      = _city_cfg["scale"]  # GEE export resolution in metres
 
-# Output folder (project root / data / tiffs)
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "tiffs")
-
-# Spatial resolution in meters (VIIRS native ~500m)
-SCALE = 500
+# Output folder — kharagpur keeps legacy path; other cities use data/{city}/tiffs/
+OUTPUT_DIR = _cities.get_tiff_dir(CITY, ROOT)
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +67,7 @@ def authenticate():
 def download_monthly_ntl():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    aoi = ee.Geometry.Rectangle(KHARAGPUR_BBOX)
+    aoi = ee.Geometry.Rectangle(BBOX)
 
     total = (END_YEAR - START_YEAR + 1) * 12
     count = 0
@@ -91,6 +111,9 @@ def download_monthly_ntl():
 
 
 if __name__ == "__main__":
+    print(f"City      : {_city_cfg['display_name']}")
+    print(f"BBox      : {BBOX}")
+    print(f"Output dir: {OUTPUT_DIR}\n")
     authenticate()
     download_monthly_ntl()
     print(f"\nAll files saved to: {OUTPUT_DIR}")

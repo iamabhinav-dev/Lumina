@@ -2,17 +2,42 @@
 preprocess.py
 Handles all raster loading, masking, stats, and time series building.
 All heavy functions are designed to be wrapped with @st.cache_data in the app.
+
+City support
+------------
+All path-dependent functions accept an optional ``city`` keyword (default
+``"kharagpur"``).  Existing call-sites that supply no argument continue to
+work without modification; the legacy ``data/tiffs/`` directory is used for
+Kharagpur.
 """
 
 import os
 import re
+import sys
 import numpy as np
 import pandas as pd
 import rasterio
 from rasterio.transform import array_bounds
 
 # ─── Paths ───────────────────────────────────────────────────────────────────
-TIFFS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "tiffs")
+_ROOT     = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_SRC      = os.path.join(_ROOT, "src")
+sys.path.insert(0, _SRC)
+
+# Legacy module-level constant — kept so any direct import of TIFFS_DIR
+# still resolves to the Kharagpur directory without change.
+TIFFS_DIR = os.path.join(_ROOT, "data", "tiffs")
+
+
+def get_tiff_dir(city: str = "kharagpur") -> str:
+    """
+    Return the GeoTIFF directory for *city*.
+
+    Kharagpur uses the legacy ``data/tiffs/`` path so that existing data
+    does not need to be moved.  Other cities use ``data/{city}/tiffs/``.
+    """
+    import cities as _cities
+    return _cities.get_tiff_dir(city, _ROOT)
 
 # VIIRS avg_rad fill / nodata threshold — values above this are sensor fill
 NODATA_THRESHOLD = 1000.0
@@ -25,11 +50,12 @@ MONTH_NAMES = [
 
 # ─── Date discovery ──────────────────────────────────────────────────────────
 
-def get_available_dates() -> list[tuple[int, int]]:
+def get_available_dates(city: str = "kharagpur") -> list[tuple[int, int]]:
     """Return sorted list of (year, month) tuples for all downloaded tifs."""
+    tiffs_dir = get_tiff_dir(city)
     pattern = re.compile(r"ntl_(\d{4})_(\d{2})\.tif$")
     dates = []
-    for fname in os.listdir(TIFFS_DIR):
+    for fname in os.listdir(tiffs_dir):
         m = pattern.match(fname)
         if m:
             dates.append((int(m.group(1)), int(m.group(2))))
@@ -47,11 +73,11 @@ def index_to_label(dates: list[tuple[int, int]], idx: int) -> str:
 
 # ─── Raster loading ──────────────────────────────────────────────────────────
 
-def get_tiff_path(year: int, month: int) -> str:
-    return os.path.join(TIFFS_DIR, f"ntl_{year}_{month:02d}.tif")
+def get_tiff_path(year: int, month: int, city: str = "kharagpur") -> str:
+    return os.path.join(get_tiff_dir(city), f"ntl_{year}_{month:02d}.tif")
 
 
-def load_raster(year: int, month: int) -> dict:
+def load_raster(year: int, month: int, city: str = "kharagpur") -> dict:
     """
     Load a single monthly NTL GeoTIFF.
     Returns dict with:
@@ -61,7 +87,7 @@ def load_raster(year: int, month: int) -> dict:
         crs       : CRS string
         shape     : (height, width)
     """
-    path = get_tiff_path(year, month)
+    path = get_tiff_path(year, month, city)
     with rasterio.open(path) as src:
         raw = src.read(1).astype(np.float32)
         nodata = src.nodata
@@ -142,18 +168,19 @@ def compute_difference(arr1: np.ndarray, arr2: np.ndarray) -> dict:
 
 # ─── Time series ─────────────────────────────────────────────────────────────
 
-def build_timeseries_df(dates: list[tuple[int, int]] = None) -> pd.DataFrame:
+def build_timeseries_df(dates: list[tuple[int, int]] = None,
+                        city: str = "kharagpur") -> pd.DataFrame:
     """
     Build a DataFrame with monthly mean/max/min radiance for all available dates.
     This is slow the first time — cache it with @st.cache_data in the app.
     """
     if dates is None:
-        dates = get_available_dates()
+        dates = get_available_dates(city)
 
     rows = []
     for year, month in dates:
         try:
-            raster = load_raster(year, month)
+            raster = load_raster(year, month, city)
             stats = get_stats(raster["array"])
             rows.append({
                 "date":       pd.Timestamp(year=year, month=month, day=1),

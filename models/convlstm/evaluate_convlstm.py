@@ -51,10 +51,22 @@ from skimage.metrics import structural_similarity, peak_signal_noise_ratio
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from convlstm.build_convlstm import build_convlstm, DEFAULTS
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT         = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_DIR    = os.path.join(ROOT, "models",  "convlstm")
-OUTPUT_DIR   = os.path.join(ROOT, "outputs", "convlstm")
+# ─── Paths / city config ─────────────────────────────────────────────────────────────────
+import argparse
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+MODEL_DIR    = _cities.get_convlstm_model_dir(CITY, ROOT)
+OUTPUT_DIR   = _cities.get_convlstm_dir(CITY, ROOT)
 PLOTS_DIR    = os.path.join(OUTPUT_DIR, "plots")
 
 FRAMES_NPZ    = os.path.join(MODEL_DIR,  "frames.npz")
@@ -63,8 +75,8 @@ METADATA_JSON = os.path.join(MODEL_DIR,  "frame_metadata.json")
 MODEL_PATH    = os.path.join(OUTPUT_DIR, "convlstm_model.keras")
 METRICS_JSON  = os.path.join(OUTPUT_DIR, "evaluation_metrics.json")
 
-SARIMA_METRICS = os.path.join(ROOT, "outputs", "sarima", "evaluation_metrics.json")
-LSTM_METRICS   = os.path.join(ROOT, "outputs", "lstm",   "evaluation_metrics.json")
+SARIMA_METRICS = _cities.get_sarima_dir(CITY, ROOT) + "/evaluation_metrics.json"
+LSTM_METRICS   = _cities.get_lstm_dir(CITY, ROOT)   + "/evaluation_metrics.json"
 
 os.makedirs(PLOTS_DIR, exist_ok=True)
 

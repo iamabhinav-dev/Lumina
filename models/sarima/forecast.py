@@ -38,9 +38,23 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 warnings.filterwarnings("ignore")
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT          = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT_DIR    = os.path.join(ROOT, "outputs", "sarima")
+# ─── Paths / city config ──────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser(description="SARIMA future forecast.")
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+_parser.add_argument("--horizon", type=int, default=12,
+                     help="Months to forecast ahead (default 12)")
+ARGS = _parser.parse_args()
+CITY    = ARGS.city.lower().strip()
+HORIZON = ARGS.horizon
+
+OUTPUT_DIR    = _cities.get_sarima_dir(CITY, ROOT)
 PLOTS_DIR     = os.path.join(OUTPUT_DIR, "plots")
 INPUT_CSV     = os.path.join(OUTPUT_DIR, "mean_brightness_clean.csv")
 ORDER_JSON    = os.path.join(OUTPUT_DIR, "best_order.json")
@@ -193,14 +207,8 @@ def print_forecast_table(df_fc: pd.DataFrame) -> None:
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--horizon", type=int, default=12,
-                        help="Number of months to forecast (default: 12)")
-    args = parser.parse_args()
-    horizon = args.horizon
-
     print("─" * 62)
-    print(f"STEP 7 — SARIMA FORECAST  (horizon = {horizon} months)")
+    print(f"STEP 7 — SARIMA FORECAST  (city = {CITY}, horizon = {HORIZON} months)")
     print("─" * 62 + "\n")
 
     series = load_full_series()
@@ -208,7 +216,7 @@ def main() -> None:
 
     result = fit_full_model(series, order, seasonal_order)
 
-    df_fc = generate_forecast(result, series, horizon)
+    df_fc = generate_forecast(result, series, HORIZON)
 
     # Save CSV
     df_fc.to_csv(FORECAST_CSV, index=False)
@@ -216,7 +224,7 @@ def main() -> None:
 
     print_forecast_table(df_fc)
 
-    plot_forecast(series, df_fc, horizon)
+    plot_forecast(series, df_fc, HORIZON)
 
     print("\n" + "=" * 62)
     print("STEP 7 COMPLETE")

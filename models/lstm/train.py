@@ -49,9 +49,21 @@ from tensorflow import keras
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lstm.build_model import build_model, DEFAULTS
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT       = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "lstm")
+# ─── Paths / city config ─────────────────────────────────────────────────────────────────
+import argparse
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+OUTPUT_DIR = _cities.get_lstm_dir(CITY, ROOT)
 PLOTS_DIR  = os.path.join(OUTPUT_DIR, "plots")
 
 SEQ_NPZ      = os.path.join(OUTPUT_DIR, "sequences.npz")

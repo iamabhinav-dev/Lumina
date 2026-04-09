@@ -41,26 +41,37 @@ import rasterio
 from rasterio.transform import Affine
 import joblib
 
-# ── paths ──────────────────────────────────────────────────────────────────────
-ROOT        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_PATH  = os.path.join(ROOT, "outputs", "convlstm", "convlstm_model.keras")
-SCALER_PATH = os.path.join(ROOT, "models",  "convlstm", "frame_scaler.pkl")
-META_PATH   = os.path.join(ROOT, "models",  "convlstm", "frame_metadata.json")
-FRAMES_PATH = os.path.join(ROOT, "models",  "convlstm", "frames.npz")
-EVAL_PATH   = os.path.join(ROOT, "outputs", "convlstm", "evaluation_metrics.json")
-OUT_DIR     = os.path.join(ROOT, "outputs", "convlstm")
+# ── paths / city config ────────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+# ── CLI ────────────────────────────────────────────────────────────────────────
+parser = argparse.ArgumentParser()
+parser.add_argument("--city", default="kharagpur",
+                    help="City key from src/cities.py  (default: kharagpur)")
+parser.add_argument("--horizon", type=int, default=12,
+                    help="Number of months to forecast (default 12)")
+ARGS    = parser.parse_args()
+CITY    = ARGS.city.lower().strip()
+HORIZON = ARGS.horizon
+
+_CLSTM_OUT = _cities.get_convlstm_dir(CITY, ROOT)
+_CLSTM_MDL = _cities.get_convlstm_model_dir(CITY, ROOT)
+
+MODEL_PATH  = os.path.join(_CLSTM_OUT, "convlstm_model.keras")
+SCALER_PATH = os.path.join(_CLSTM_MDL, "frame_scaler.pkl")
+META_PATH   = os.path.join(_CLSTM_MDL, "frame_metadata.json")
+FRAMES_PATH = os.path.join(_CLSTM_MDL, "frames.npz")
+EVAL_PATH   = os.path.join(_CLSTM_OUT, "evaluation_metrics.json")
+OUT_DIR     = _CLSTM_OUT
 TIFF_DIR    = os.path.join(OUT_DIR, "forecast_tiffs")
 PLOT_DIR    = os.path.join(OUT_DIR, "plots")
 
 for d in (TIFF_DIR, PLOT_DIR):
     os.makedirs(d, exist_ok=True)
-
-# ── CLI ────────────────────────────────────────────────────────────────────────
-parser = argparse.ArgumentParser()
-parser.add_argument("--horizon", type=int, default=12,
-                    help="Number of months to forecast (default 12)")
-ARGS = parser.parse_args()
-HORIZON = ARGS.horizon
 
 
 def main():

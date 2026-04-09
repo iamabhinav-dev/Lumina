@@ -43,10 +43,22 @@ warnings.filterwarnings("ignore")
 
 import tensorflow as tf
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-LSTM_DIR    = os.path.join(ROOT, "outputs", "lstm")
-SARIMA_DIR  = os.path.join(ROOT, "outputs", "sarima")
+# ─── Paths / city config ─────────────────────────────────────────────────────
+import argparse
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+LSTM_DIR    = _cities.get_lstm_dir(CITY, ROOT)
+SARIMA_DIR  = _cities.get_sarima_dir(CITY, ROOT)
 PLOTS_DIR   = os.path.join(LSTM_DIR, "plots")
 
 MODEL_PATH   = os.path.join(LSTM_DIR, "lstm_model.keras")

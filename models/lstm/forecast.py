@@ -49,10 +49,25 @@ warnings.filterwarnings("ignore")
 
 import tensorflow as tf
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT        = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-LSTM_DIR    = os.path.join(ROOT, "outputs", "lstm")
-SARIMA_DIR  = os.path.join(ROOT, "outputs", "sarima")
+# ─── Paths / city config ─────────────────────────────────────────────────────
+import argparse
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser(description="LSTM — Step 6: Forecast")
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+_parser.add_argument("--horizon", type=int, default=12,
+                     help="Months to forecast beyond Dec 2025 (default: 12)")
+ARGS = _parser.parse_args()
+CITY    = ARGS.city.lower().strip()
+HORIZON = ARGS.horizon
+
+LSTM_DIR    = _cities.get_lstm_dir(CITY, ROOT)
+SARIMA_DIR  = _cities.get_sarima_dir(CITY, ROOT)
 PLOTS_DIR   = os.path.join(LSTM_DIR, "plots")
 
 MODEL_PATH  = os.path.join(LSTM_DIR, "lstm_model.keras")
@@ -257,14 +272,6 @@ def main(horizon: int) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="LSTM — Step 6: Forecast")
-    parser.add_argument(
-        "--horizon", type=int, default=DEFAULT_HORIZON,
-        help=f"Months to forecast beyond Dec 2025 (default: {DEFAULT_HORIZON})"
-    )
-    args = parser.parse_args()
-
-    if args.horizon < 1 or args.horizon > 36:
+    if HORIZON < 1 or HORIZON > 36:
         sys.exit("[ERROR] --horizon must be between 1 and 36.")
-
-    main(args.horizon)
+    main(HORIZON)

@@ -25,7 +25,9 @@ Usage:
     python models/sarima/evaluate.py
 """
 
+import argparse
 import os
+import sys
 import json
 import warnings
 import joblib
@@ -41,9 +43,20 @@ from statsmodels.graphics.tsaplots import plot_acf
 
 warnings.filterwarnings("ignore")
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT       = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "sarima")
+# ─── Paths / city config ──────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+OUTPUT_DIR = _cities.get_sarima_dir(CITY, ROOT)
 PLOTS_DIR  = os.path.join(OUTPUT_DIR, "plots")
 MODEL_PKL  = os.path.join(OUTPUT_DIR, "sarima_model.pkl")
 SPLIT_CSV  = os.path.join(OUTPUT_DIR, "train_test_split.csv")

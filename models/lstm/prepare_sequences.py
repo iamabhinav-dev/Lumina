@@ -34,10 +34,23 @@ from sklearn.preprocessing import MinMaxScaler
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"   # suppress TF CPU warnings
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
-ROOT       = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SARIMA_DIR = os.path.join(ROOT, "outputs", "sarima")
-OUTPUT_DIR = os.path.join(ROOT, "outputs", "lstm")
+# ─── Paths / city config ─────────────────────────────────────────────────────
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SRC  = os.path.join(ROOT, "src")
+sys.path.insert(0, SRC)
+
+import cities as _cities
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--city", default="kharagpur",
+                     help="City key from src/cities.py  (default: kharagpur)")
+_parser.add_argument("--window", type=int, default=None,
+                     help="Sliding window size in months (default from best_params.json or 12)")
+ARGS = _parser.parse_args()
+CITY = ARGS.city.lower().strip()
+
+SARIMA_DIR = _cities.get_sarima_dir(CITY, ROOT)
+OUTPUT_DIR = _cities.get_lstm_dir(CITY, ROOT)
 PLOTS_DIR  = os.path.join(OUTPUT_DIR, "plots")
 
 INPUT_CSV   = os.path.join(SARIMA_DIR, "mean_brightness_clean.csv")
@@ -196,14 +209,7 @@ def main(window_size: int) -> None:
 # ─── Entry point ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="LSTM — Step 1: Prepare Sequences")
-    parser.add_argument(
-        "--window", type=int, default=DEFAULT_WINDOW,
-        help=f"Look-back window size in months (default: {DEFAULT_WINDOW})"
-    )
-    args = parser.parse_args()
-
-    if args.window < 1 or args.window > 36:
+    window = ARGS.window if ARGS.window is not None else DEFAULT_WINDOW
+    if window < 1 or window > 36:
         sys.exit("[ERROR] --window must be between 1 and 36.")
-
-    main(args.window)
+    main(window)
