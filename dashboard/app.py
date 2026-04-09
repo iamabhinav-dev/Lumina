@@ -28,6 +28,8 @@ Welcome to the VIIRS NTL (Night Time Light) analysis platform for **Kharagpur**.
 | **🔍 Change Detection** | Compare two dates, visualize difference maps |
 | **📊 Charts & Trends** | Time series, seasonal patterns, year-over-year, histograms |
 | **🔮 SARIMA Forecast** | SARIMA(0,1,1)(0,1,1)[12] forecast with 95% CI and model diagnostics |
+| **🧠 LSTM Forecast** | Stacked LSTM with MC Dropout uncertainty, head-to-head vs SARIMA |
+| **🗺️ ConvLSTM Spatial Forecast** | Pixel-level spatial NTL maps — test evaluation + 12-month forecast with CI, GeoTIFF download |
 
 Use the **sidebar** to navigate between pages.
 
