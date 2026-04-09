@@ -15,67 +15,72 @@ import streamlit as st
 # ─── Paths ────────────────────────────────────────────────────────────────────
 PAGE_DIR   = os.path.dirname(os.path.abspath(__file__))
 ROOT       = os.path.join(PAGE_DIR, "..", "..")
-LSTM_DIR   = os.path.join(ROOT, "outputs", "lstm")
-SARIMA_DIR = os.path.join(ROOT, "outputs", "sarima")
 MODELS_DIR = os.path.join(ROOT, "models", "lstm")
 
 sys.path.insert(0, os.path.join(ROOT, "src"))
+import cities as _cities
 
 st.set_page_config(page_title="LSTM Forecast", page_icon="🧠", layout="wide")
+
+# ─── City selection ─────────────────────────────────────────────────────────────
+CITY       = st.session_state.get("city", "kharagpur")
+CFG        = _cities.get_city(CITY)
+LSTM_DIR   = _cities.get_lstm_dir(CITY, ROOT)
+SARIMA_DIR = _cities.get_sarima_dir(CITY, ROOT)
 
 PLOTLY_DARK = "plotly_dark"
 
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
 @st.cache_data(show_spinner="Loading historical series…")
-def load_history() -> pd.DataFrame:
-    path = os.path.join(SARIMA_DIR, "mean_brightness_clean.csv")
+def load_history(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "mean_brightness_clean.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df.sort_values("date").reset_index(drop=True)
 
 
 @st.cache_data(show_spinner="Loading LSTM forecast…")
-def load_lstm_forecast() -> pd.DataFrame:
-    path = os.path.join(LSTM_DIR, "forecast.csv")
+def load_lstm_forecast(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_lstm_dir(city, ROOT), "forecast.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df.sort_values("date").reset_index(drop=True)
 
 
 @st.cache_data(show_spinner="Loading SARIMA forecast…")
-def load_sarima_forecast() -> pd.DataFrame:
-    path = os.path.join(SARIMA_DIR, "forecast.csv")
+def load_sarima_forecast(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "forecast.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df.sort_values("date").reset_index(drop=True)
 
 
 @st.cache_data(show_spinner="Loading test split…")
-def load_lstm_split() -> pd.DataFrame:
-    path = os.path.join(LSTM_DIR, "train_test_split.csv")
+def load_lstm_split(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_lstm_dir(city, ROOT), "train_test_split.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df
 
 
 @st.cache_data
-def load_lstm_metrics() -> dict:
-    with open(os.path.join(LSTM_DIR, "evaluation_metrics.json")) as f:
+def load_lstm_metrics(city: str) -> dict:
+    with open(os.path.join(_cities.get_lstm_dir(city, ROOT), "evaluation_metrics.json")) as f:
         return json.load(f)
 
 
 @st.cache_data
-def load_sarima_metrics() -> dict:
-    with open(os.path.join(SARIMA_DIR, "evaluation_metrics.json")) as f:
+def load_sarima_metrics(city: str) -> dict:
+    with open(os.path.join(_cities.get_sarima_dir(city, ROOT), "evaluation_metrics.json")) as f:
         return json.load(f)
 
 
 @st.cache_data
-def load_best_params() -> dict:
-    with open(os.path.join(LSTM_DIR, "best_params.json")) as f:
+def load_best_params(city: str) -> dict:
+    with open(os.path.join(_cities.get_lstm_dir(city, ROOT), "best_params.json")) as f:
         return json.load(f)
 
 
 @st.cache_data(show_spinner="Loading training history…")
-def load_training_history() -> dict:
-    path = os.path.join(LSTM_DIR, "training_history.json")
+def load_training_history(city: str) -> dict:
+    path = os.path.join(_cities.get_lstm_dir(city, ROOT), "training_history.json")
     if not os.path.exists(path):
         return {}
     with open(path) as f:
@@ -83,12 +88,13 @@ def load_training_history() -> dict:
 
 
 @st.cache_data(show_spinner="Running LSTM test predictions…")
-def load_lstm_test_preds() -> tuple[np.ndarray, np.ndarray]:
+def load_lstm_test_preds(city: str) -> tuple[np.ndarray, np.ndarray]:
     """Load model + sequences and predict on test set (cached)."""
     import os as _os
-    seq_npz    = _os.path.join(LSTM_DIR, "sequences.npz")
-    scaler_pkl = _os.path.join(LSTM_DIR, "scaler.pkl")
-    model_path = _os.path.join(LSTM_DIR, "lstm_model.keras")
+    lstm_dir   = _cities.get_lstm_dir(city, ROOT)
+    seq_npz    = _os.path.join(lstm_dir, "sequences.npz")
+    scaler_pkl = _os.path.join(lstm_dir, "scaler.pkl")
+    model_path = _os.path.join(lstm_dir, "lstm_model.keras")
 
     for p in [seq_npz, scaler_pkl, model_path]:
         if not _os.path.exists(p):
@@ -176,7 +182,7 @@ st.sidebar.caption(
 
 # ─── Guard ───────────────────────────────────────────────────────────────────
 
-st.title("🧠 LSTM Forecast — Kharagpur NTL")
+st.title(f"🧠 LSTM Forecast — {CFG['display_name']} NTL")
 
 if not files_ready():
     st.error(
@@ -194,20 +200,20 @@ if not files_ready():
 
 # ─── Load data ────────────────────────────────────────────────────────────────
 
-hist_df      = load_history()
-lstm_fc      = load_lstm_forecast().head(horizon)
-sarima_fc    = load_sarima_forecast().head(horizon)
-split_df     = load_lstm_split()
-lstm_m       = load_lstm_metrics()
-sarima_m     = load_sarima_metrics()
-params       = load_best_params()
-train_hist   = load_training_history()
+hist_df      = load_history(CITY)
+lstm_fc      = load_lstm_forecast(CITY).head(horizon)
+sarima_fc    = load_sarima_forecast(CITY).head(horizon)
+split_df     = load_lstm_split(CITY)
+lstm_m       = load_lstm_metrics(CITY)
+sarima_m     = load_sarima_metrics(CITY)
+params       = load_best_params(CITY)
+train_hist   = load_training_history(CITY)
 
 test_df      = split_df[split_df["split"] == "test"]
 context_cut  = hist_df["date"].max() - pd.DateOffset(years=context_years)
 hist_ctx     = hist_df[hist_df["date"] >= context_cut]
 
-actual_test, lstm_pred_test = load_lstm_test_preds()
+actual_test, lstm_pred_test = load_lstm_test_preds(CITY)
 sarima_pred_test = sarima_test_preds(len(test_df))
 
 # ─── Header metrics row ───────────────────────────────────────────────────────

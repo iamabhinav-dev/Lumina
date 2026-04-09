@@ -15,6 +15,7 @@ from streamlit_folium import st_folium
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 import preprocess as pp
+import cities as _cities
 import utils as ut
 
 st.set_page_config(page_title="NTL Explorer", page_icon="🗺️", layout="wide")
@@ -22,18 +23,18 @@ st.set_page_config(page_title="NTL Explorer", page_icon="🗺️", layout="wide"
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
 @st.cache_data(show_spinner="Loading raster...")
-def cached_load_raster(year: int, month: int):
-    return pp.load_raster(year, month)
+def cached_load_raster(year: int, month: int, city: str):
+    return pp.load_raster(year, month, city)
 
 
 @st.cache_data(show_spinner="Building time series...")
-def cached_timeseries():
-    return pp.build_timeseries_df()
+def cached_timeseries(city: str):
+    return pp.build_timeseries_df(city=city)
 
 
 @st.cache_data
-def cached_dates():
-    return pp.get_available_dates()
+def cached_dates(city: str):
+    return pp.get_available_dates(city)
 
 
 # ─── Session state init ───────────────────────────────────────────────────────
@@ -49,9 +50,11 @@ if "view_mode" not in st.session_state:
 
 # ─── Load data ────────────────────────────────────────────────────────────────
 
-dates = cached_dates()
+CITY  = st.session_state.get("city", "kharagpur")
+CFG   = _cities.get_city(CITY)
+dates = cached_dates(CITY)
 labels = ut.dates_to_labels(dates)
-ts_df = cached_timeseries()
+ts_df = cached_timeseries(CITY)
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -134,7 +137,7 @@ if view_mode == "Map Explorer (Folium)" and st.session_state.playing:
 
 # ─── Main panel ───────────────────────────────────────────────────────────────
 
-st.title("🌃 NTL Explorer — Kharagpur")
+st.title(f"🌃 NTL Explorer — {CFG['display_name']}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FAST PREVIEW MODE — Plotly client-side animation
@@ -150,7 +153,7 @@ if view_mode == "Fast Preview (Plotly)":
         # Load all rasters
         all_arrays = []
         for y, m in anim_dates:
-            r = cached_load_raster(y, m)
+            r = cached_load_raster(y, m, CITY)
             all_arrays.append(r["array"])
             bounds = r["bounds"]
 
@@ -273,7 +276,7 @@ if view_mode == "Fast Preview (Plotly)":
     st.caption(
         f"📊 {len(anim_dates)} months  |  "
         f"Radiance range: **{global_min:.2f} – {global_max:.2f}** nW/cm²/sr  |  "
-        f"Resolution: 35 × 45 pixels (~500 m/px)  |  Use ▶ Play inside the chart to animate."
+        f"Resolution: {all_arrays[0].shape[0]} × {all_arrays[0].shape[1]} pixels (~500 m/px)  |  Use ▶ Play inside the chart to animate."
     )
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -281,7 +284,7 @@ if view_mode == "Fast Preview (Plotly)":
 # ══════════════════════════════════════════════════════════════════════════════
 else:
     year, month = dates[st.session_state.date_idx]
-    raster = cached_load_raster(year, month)
+    raster = cached_load_raster(year, month, CITY)
     arr = raster["array"]
     bounds = raster["bounds"]
     stats = pp.get_stats(arr)
@@ -314,7 +317,7 @@ else:
 
         folium.Rectangle(
             bounds=[[bounds[1], bounds[0]], [bounds[3], bounds[2]]],
-            color="#ffffff", weight=1.5, fill=False, tooltip="Kharagpur AOI",
+            color="#ffffff", weight=1.5, fill=False, tooltip=f"{CFG['display_name']} AOI",
         ).add_to(m)
 
         vmin = float(stats["min"])

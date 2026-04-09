@@ -16,12 +16,17 @@ import streamlit as st
 # ─── Paths ────────────────────────────────────────────────────────────────────
 PAGE_DIR   = os.path.dirname(os.path.abspath(__file__))
 ROOT       = os.path.join(PAGE_DIR, "..", "..")
-SARIMA_DIR = os.path.join(ROOT, "outputs", "sarima")
 MODELS_DIR = os.path.join(ROOT, "models", "sarima")
 
 sys.path.insert(0, os.path.join(ROOT, "src"))
+import cities as _cities
 
 st.set_page_config(page_title="SARIMA Forecast", page_icon="🔮", layout="wide")
+
+# ─── City selection ─────────────────────────────────────────────────────────────
+CITY       = st.session_state.get("city", "kharagpur")
+CFG        = _cities.get_city(CITY)
+SARIMA_DIR = _cities.get_sarima_dir(CITY, ROOT)
 
 PLOTLY_DARK = "plotly_dark"
 
@@ -31,36 +36,36 @@ MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun",
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
 @st.cache_data(show_spinner="Loading historical series…")
-def load_history() -> pd.DataFrame:
-    path = os.path.join(SARIMA_DIR, "mean_brightness_clean.csv")
+def load_history(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "mean_brightness_clean.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df.sort_values("date").reset_index(drop=True)
 
 
 @st.cache_data(show_spinner="Loading forecast…")
-def load_forecast() -> pd.DataFrame:
-    path = os.path.join(SARIMA_DIR, "forecast.csv")
+def load_forecast(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "forecast.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df.sort_values("date").reset_index(drop=True)
 
 
 @st.cache_data(show_spinner="Loading test results…")
-def load_test_split() -> pd.DataFrame:
-    path = os.path.join(SARIMA_DIR, "train_test_split.csv")
+def load_test_split(city: str) -> pd.DataFrame:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "train_test_split.csv")
     df = pd.read_csv(path, parse_dates=["date"])
     return df
 
 
 @st.cache_data
-def load_metrics() -> dict:
-    path = os.path.join(SARIMA_DIR, "evaluation_metrics.json")
+def load_metrics(city: str) -> dict:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "evaluation_metrics.json")
     with open(path) as f:
         return json.load(f)
 
 
 @st.cache_data
-def load_order() -> dict:
-    path = os.path.join(SARIMA_DIR, "best_order.json")
+def load_order(city: str) -> dict:
+    path = os.path.join(_cities.get_sarima_dir(city, ROOT), "best_order.json")
     with open(path) as f:
         return json.load(f)
 
@@ -104,7 +109,7 @@ if st.sidebar.button(f"▶ Forecast {horizon} months", use_container_width=True)
         script = os.path.join(MODELS_DIR, "forecast.py")
         venv_python = sys.executable
         result = subprocess.run(
-            [venv_python, script, "--horizon", str(horizon)],
+            [venv_python, script, "--horizon", str(horizon), "--city", CITY],
             capture_output=True, text=True,
         )
         if result.returncode == 0:
@@ -121,7 +126,7 @@ st.sidebar.caption("Model: SARIMA(0,1,1)(0,1,1)[12]  \nFitted on full series (Ja
 
 # ─── Guard: check files exist ─────────────────────────────────────────────────
 
-st.title("🔮 SARIMA Forecast — Kharagpur NTL")
+st.title(f"🔮 SARIMA Forecast — {CFG['display_name']} NTL")
 
 if not files_ready():
     st.error(
@@ -140,11 +145,11 @@ if not files_ready():
 
 # ─── Load data ────────────────────────────────────────────────────────────────
 
-hist_df   = load_history()
-fc_df     = load_forecast()
-split_df  = load_test_split()
-metrics   = load_metrics()
-order_cfg = load_order()
+hist_df   = load_history(CITY)
+fc_df     = load_forecast(CITY)
+split_df  = load_test_split(CITY)
+metrics   = load_metrics(CITY)
+order_cfg = load_order(CITY)
 
 train_df = split_df[split_df["split"] == "train"]
 test_df  = split_df[split_df["split"] == "test"]

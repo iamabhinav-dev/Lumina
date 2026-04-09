@@ -12,6 +12,7 @@ Download button serves all 36 forecast GeoTIFFs as a ZIP archive.
 import io
 import json
 import os
+import sys
 import zipfile
 
 import matplotlib
@@ -28,12 +29,9 @@ from PIL import Image
 # ─── Paths ────────────────────────────────────────────────────────────────────
 PAGE_DIR   = os.path.dirname(os.path.abspath(__file__))
 ROOT       = os.path.join(PAGE_DIR, "..", "..")
-CLSTM_DIR  = os.path.join(ROOT, "outputs",  "convlstm")
-MODELS_DIR = os.path.join(ROOT, "models",   "convlstm")
-TIFF_DIR   = os.path.join(CLSTM_DIR, "forecast_tiffs")
-PLOT_DIR   = os.path.join(CLSTM_DIR, "plots")
-SARIMA_DIR = os.path.join(ROOT, "outputs",  "sarima")
-LSTM_DIR   = os.path.join(ROOT, "outputs",  "lstm")
+
+sys.path.insert(0, os.path.join(ROOT, "src"))
+import cities as _cities
 
 st.set_page_config(
     page_title="ConvLSTM Spatial Forecast",
@@ -41,49 +39,60 @@ st.set_page_config(
     layout="wide",
 )
 
+# ─── City selection ─────────────────────────────────────────────────────────────
+CITY       = st.session_state.get("city", "kharagpur")
+CFG        = _cities.get_city(CITY)
+CLSTM_DIR  = _cities.get_convlstm_dir(CITY, ROOT)
+MODELS_DIR = _cities.get_convlstm_model_dir(CITY, ROOT)
+SARIMA_DIR = _cities.get_sarima_dir(CITY, ROOT)
+LSTM_DIR   = _cities.get_lstm_dir(CITY, ROOT)
+TIFF_DIR   = os.path.join(CLSTM_DIR, "forecast_tiffs")
+PLOT_DIR   = os.path.join(CLSTM_DIR, "plots")
+CONVLSTM_SCRIPTS_DIR = os.path.join(ROOT, "models", "convlstm")
+
 CMAP = "hot"
 
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
 @st.cache_data
-def load_eval_metrics() -> dict:
-    with open(os.path.join(CLSTM_DIR, "evaluation_metrics.json")) as f:
+def load_eval_metrics(city: str) -> dict:
+    with open(os.path.join(_cities.get_convlstm_dir(city, ROOT), "evaluation_metrics.json")) as f:
         return json.load(f)
 
 
 @st.cache_data
-def load_forecast_metadata() -> dict:
-    with open(os.path.join(CLSTM_DIR, "forecast_metadata.json")) as f:
+def load_forecast_metadata(city: str) -> dict:
+    with open(os.path.join(_cities.get_convlstm_dir(city, ROOT), "forecast_metadata.json")) as f:
         return json.load(f)
 
 
 @st.cache_data(show_spinner="Loading forecast frames…")
-def load_forecast_frames() -> dict:
-    data = np.load(os.path.join(CLSTM_DIR, "forecast_frames.npz"))
+def load_forecast_frames(city: str) -> dict:
+    data = np.load(os.path.join(_cities.get_convlstm_dir(city, ROOT), "forecast_frames.npz"))
     return {k: data[k] for k in data.files}
 
 
 @st.cache_data(show_spinner="Loading test frames…")
-def load_frames_npz() -> dict:
-    data = np.load(os.path.join(MODELS_DIR, "frames.npz"), allow_pickle=True)
+def load_frames_npz(city: str) -> dict:
+    data = np.load(os.path.join(_cities.get_convlstm_model_dir(city, ROOT), "frames.npz"), allow_pickle=True)
     return {k: data[k] for k in data.files}
 
 
 @st.cache_data(show_spinner="Loading scaler…")
-def load_scaler():
+def load_scaler(city: str):
     import joblib
-    return joblib.load(os.path.join(MODELS_DIR, "frame_scaler.pkl"))
+    return joblib.load(os.path.join(_cities.get_convlstm_model_dir(city, ROOT), "frame_scaler.pkl"))
 
 
 @st.cache_data(show_spinner="Loading frame metadata…")
-def load_frame_metadata() -> dict:
-    with open(os.path.join(MODELS_DIR, "frame_metadata.json")) as f:
+def load_frame_metadata(city: str) -> dict:
+    with open(os.path.join(_cities.get_convlstm_model_dir(city, ROOT), "frame_metadata.json")) as f:
         return json.load(f)
 
 
 @st.cache_data
-def load_sarima_metrics() -> dict:
-    p = os.path.join(SARIMA_DIR, "evaluation_metrics.json")
+def load_sarima_metrics(city: str) -> dict:
+    p = os.path.join(_cities.get_sarima_dir(city, ROOT), "evaluation_metrics.json")
     if not os.path.exists(p):
         return {}
     with open(p) as f:
@@ -91,8 +100,8 @@ def load_sarima_metrics() -> dict:
 
 
 @st.cache_data
-def load_lstm_metrics() -> dict:
-    p = os.path.join(LSTM_DIR, "evaluation_metrics.json")
+def load_lstm_metrics(city: str) -> dict:
+    p = os.path.join(_cities.get_lstm_dir(city, ROOT), "evaluation_metrics.json")
     if not os.path.exists(p):
         return {}
     with open(p) as f:
@@ -100,30 +109,29 @@ def load_lstm_metrics() -> dict:
 
 
 @st.cache_data(show_spinner="Running test predictions…")
-def compute_test_predictions() -> tuple[np.ndarray, np.ndarray]:
+def compute_test_predictions(city: str) -> tuple[np.ndarray, np.ndarray]:
     """
-    Predict on the test set using build_convlstm + load_weights.
-    Returns (y_true, y_pred) — both (24, H, W) in original radiance units.
+    Predict on the test set using keras.models.load_model(compile=False).
+    Returns (y_true, y_pred) — both (N, H, W) in original radiance units.
     """
-    import sys as _sys
     import os as _os
-    _sys.path.insert(0, _os.path.join(ROOT, "models"))
     _os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-    from convlstm.build_convlstm import build_convlstm  # noqa: E402
-
-    model_path = _os.path.join(CLSTM_DIR, "convlstm_model.keras")
-    model = build_convlstm()
-    model.load_weights(model_path)
-
+    import tensorflow as tf
     import joblib
-    scaler = joblib.load(_os.path.join(MODELS_DIR, "frame_scaler.pkl"))
-    raw    = np.load(_os.path.join(MODELS_DIR, "frames.npz"), allow_pickle=True)
-    X_test = raw["X_test"]   # (24, 12, H, W, 1) scaled
-    y_test = raw["y_test"]   # (24, H, W, 1)     scaled
+
+    clstm_dir  = _cities.get_convlstm_dir(city, ROOT)
+    models_dir = _cities.get_convlstm_model_dir(city, ROOT)
+
+    model_path = _os.path.join(clstm_dir, "convlstm_model.keras")
+    model = tf.keras.models.load_model(model_path, compile=False)
+
+    scaler = joblib.load(_os.path.join(models_dir, "frame_scaler.pkl"))
+    raw    = np.load(_os.path.join(models_dir, "frames.npz"), allow_pickle=True)
+    X_test = raw["X_test"]   # (N, 12, H, W, 1) scaled
+    y_test = raw["y_test"]   # (N, H, W, 1)     scaled
 
     H, W = X_test.shape[2], X_test.shape[3]
-    preds_scaled = model.predict(X_test, verbose=0)  # (24, H, W, 1)
+    preds_scaled = model.predict(X_test, verbose=0)  # (N, H, W, 1)
 
     def inv(arr_scaled):
         flat = arr_scaled.reshape(arr_scaled.shape[0], -1)
@@ -237,9 +245,9 @@ st.sidebar.markdown("**Re-run Forecast**")
 if st.sidebar.button("▶ Re-run forecast (12 months)", use_container_width=True):
     with st.spinner("Running ConvLSTM forecast …"):
         import subprocess, sys as _sys
-        script = os.path.join(MODELS_DIR, "forecast_convlstm.py")
+        script = os.path.join(CONVLSTM_SCRIPTS_DIR, "forecast_convlstm.py")
         result = subprocess.run(
-            [_sys.executable, script, "--horizon", "12"],
+            [_sys.executable, script, "--horizon", "12", "--city", CITY],
             capture_output=True, text=True,
         )
         if result.returncode == 0:
@@ -260,7 +268,7 @@ st.sidebar.caption(
 
 # ─── Guard ────────────────────────────────────────────────────────────────────
 
-st.title("🗺️ ConvLSTM Spatial Forecast — Kharagpur NTL")
+st.title(f"🗺️ ConvLSTM Spatial Forecast — {CFG['display_name']} NTL")
 
 if not files_ready():
     st.error(
@@ -278,12 +286,12 @@ if not files_ready():
 
 # ─── Load data ────────────────────────────────────────────────────────────────
 
-eval_m       = load_eval_metrics()
-fc_meta      = load_forecast_metadata()
-fc_frames    = load_forecast_frames()
-frame_meta   = load_frame_metadata()
-sarima_m     = load_sarima_metrics()
-lstm_m       = load_lstm_metrics()
+eval_m       = load_eval_metrics(CITY)
+fc_meta      = load_forecast_metadata(CITY)
+fc_frames    = load_forecast_frames(CITY)
+frame_meta   = load_frame_metadata(CITY)
+sarima_m     = load_sarima_metrics(CITY)
+lstm_m       = load_lstm_metrics(CITY)
 
 test_dates   = [d for d in frame_meta["dates"] if d >= frame_meta["test_start"]]  # 24
 fc_dates     = fc_meta["dates"]   # 12
@@ -301,7 +309,7 @@ FC_VMIN = 0.0
 
 st.markdown(
     "**Architecture:** `ConvLSTM(16→32→32)` encoder + `(32→16)` decoder  "
-    "| ~241K params | input `(12, 35, 45, 1)` | output `(35, 45, 1)`  "
+    "| ~241K params  "
     "| Test: Jan 2024 – Dec 2025 (24 months)"
 )
 
@@ -375,7 +383,7 @@ if mode == "📅 Forecast (2026)":
         st.markdown(f"**Band:** {fc_band}")
         st.markdown(f"**Spatial mean:** `{arr.mean():.3f}` nW/cm²/sr")
         st.markdown(f"**Min:** `{arr.min():.3f}` &nbsp; **Max:** `{arr.max():.3f}`")
-        st.markdown(f"**Grid:** 35 × 45 pixels (~500m res)")
+        st.markdown(f"**Grid:** {arr.shape[0]} × {arr.shape[1]} pixels (~500m res)")
         st.markdown("---")
         st.markdown(
             f"**CI half-width:** ±{fc_meta['ci_half']:.2f} nW/cm²/sr  \n"
@@ -418,8 +426,8 @@ if mode == "📅 Forecast (2026)":
     test_actual_means = [m["pixel_MAE"] for m in eval_m.get("per_month", [])]
     # Use the saved per-month pixel_MAE for a visual guide; not the actual mean
     # Better: load from frames and compute directly (cached)
-    frames_raw = load_frames_npz()
-    scaler     = load_scaler()
+    frames_raw = load_frames_npz(CITY)
+    scaler     = load_scaler(CITY)
     y_test_sc  = frames_raw["y_test"]  # (24, H, W, 1) scaled
     H_g, W_g   = y_test_sc.shape[1], y_test_sc.shape[2]
     y_test_orig = np.clip(
@@ -476,7 +484,7 @@ if mode == "📅 Forecast (2026)":
 else:
     st.subheader("🔍 Test Period Evaluation — Jan 2024 to Dec 2025")
 
-    y_true, y_pred = compute_test_predictions()
+    y_true, y_pred = compute_test_predictions(CITY)
 
     # Month selector
     test_month_idx = st.slider(

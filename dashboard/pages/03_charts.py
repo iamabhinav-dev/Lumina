@@ -13,6 +13,7 @@ import streamlit as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 import preprocess as pp
+import cities as _cities
 import utils as ut
 
 st.set_page_config(page_title="Charts & Trends", page_icon="📊", layout="wide")
@@ -23,25 +24,27 @@ PLOTLY_DARK = "plotly_dark"
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
 @st.cache_data(show_spinner="Building time series (first run may take a minute)...")
-def cached_timeseries():
-    return pp.build_timeseries_df()
+def cached_timeseries(city: str):
+    return pp.build_timeseries_df(city=city)
 
 
 @st.cache_data(show_spinner="Loading raster...")
-def cached_load_raster(year: int, month: int):
-    return pp.load_raster(year, month)
+def cached_load_raster(year: int, month: int, city: str):
+    return pp.load_raster(year, month, city)
 
 
 @st.cache_data
-def cached_dates():
-    return pp.get_available_dates()
+def cached_dates(city: str):
+    return pp.get_available_dates(city)
 
 
 # ─── Load data ────────────────────────────────────────────────────────────────
 
-dates  = cached_dates()
+CITY   = st.session_state.get("city", "kharagpur")
+CFG    = _cities.get_city(CITY)
+dates  = cached_dates(CITY)
 labels = ut.dates_to_labels(dates)
-df     = cached_timeseries()
+df     = cached_timeseries(CITY)
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -76,7 +79,7 @@ selected_years = st.sidebar.multiselect(
 
 # ─── Main panel ───────────────────────────────────────────────────────────────
 
-st.title("📊 Charts & Trends — Kharagpur NTL")
+st.title(f"📊 Charts & Trends — {CFG['display_name']} NTL")
 
 if df.empty:
     st.error("Time series data not available. Check that data/tiffs/ has downloaded files.")
@@ -264,7 +267,7 @@ elif chart_type == "% Change from Baseline":
 elif chart_type == "Pixel Histogram":
     st.subheader(f"📉 Pixel Radiance Distribution — {labels[selected_idx]}")
 
-    raster = cached_load_raster(sel_year, sel_month)
+    raster = cached_load_raster(sel_year, sel_month, CITY)
     arr = raster["array"]
     valid = arr[np.isfinite(arr)].flatten()
 

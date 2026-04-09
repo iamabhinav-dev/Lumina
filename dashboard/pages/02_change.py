@@ -11,6 +11,7 @@ from streamlit_folium import st_folium
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 import preprocess as pp
+import cities as _cities
 import utils as ut
 
 st.set_page_config(page_title="Change Detection", page_icon="🔍", layout="wide")
@@ -19,18 +20,20 @@ st.set_page_config(page_title="Change Detection", page_icon="🔍", layout="wide
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
 @st.cache_data(show_spinner="Loading raster...")
-def cached_load_raster(year: int, month: int):
-    return pp.load_raster(year, month)
+def cached_load_raster(year: int, month: int, city: str):
+    return pp.load_raster(year, month, city)
 
 
 @st.cache_data
-def cached_dates():
-    return pp.get_available_dates()
+def cached_dates(city: str):
+    return pp.get_available_dates(city)
 
 
 # ─── Load data ────────────────────────────────────────────────────────────────
 
-dates = cached_dates()
+CITY   = st.session_state.get("city", "kharagpur")
+CFG    = _cities.get_city(CITY)
+dates  = cached_dates(CITY)
 labels = ut.dates_to_labels(dates)
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -68,8 +71,8 @@ basemap = st.sidebar.radio(
 y1, m1 = dates[t1_idx]
 y2, m2 = dates[t2_idx]
 
-raster1 = cached_load_raster(y1, m1)
-raster2 = cached_load_raster(y2, m2)
+raster1 = cached_load_raster(y1, m1, CITY)
+raster2 = cached_load_raster(y2, m2, CITY)
 
 arr1, arr2 = raster1["array"], raster2["array"]
 bounds = raster1["bounds"]  # same AOI for both
