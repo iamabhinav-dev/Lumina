@@ -1,5 +1,11 @@
-earthengine-api
-geemap
-rasterio
+streamlit
 numpy
 pandas
+rasterio
+matplotlib
+plotly
+folium
+streamlit-folium
+Pillow
+joblib
+tensorflow
