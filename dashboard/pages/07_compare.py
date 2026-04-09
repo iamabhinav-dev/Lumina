@@ -256,7 +256,7 @@ if all(v is not None for v in fc_data.values()):
         def _arr_to_image(arr2d: np.ndarray, title: str) -> Image.Image:
             vmin, vmax = 0.0, max(float(np.percentile(arr2d, 99)), 0.01)
             fig, ax = plt.subplots(figsize=(4.5, 4.0), facecolor="#111")
-            im = ax.imshow(arr2d, cmap="hot", vmin=vmin, vmax=vmax, aspect="equal")
+            im = ax.imshow(arr2d, cmap="Greys_r", vmin=vmin, vmax=vmax, aspect="equal")
             ax.set_title(title, color="white", fontsize=11, pad=6)
             ax.axis("off")
             cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)

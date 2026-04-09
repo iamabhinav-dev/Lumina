@@ -50,7 +50,7 @@ TIFF_DIR   = os.path.join(CLSTM_DIR, "forecast_tiffs")
 PLOT_DIR   = os.path.join(CLSTM_DIR, "plots")
 CONVLSTM_SCRIPTS_DIR = os.path.join(ROOT, "models", "convlstm")
 
-CMAP = "hot"
+CMAP = "Greys_r"
 
 # ─── Cached loaders ───────────────────────────────────────────────────────────
 
@@ -192,7 +192,7 @@ def _diff_to_image(
     """Signed difference map (RdBu_r centred at 0)."""
     norm = Normalize(vmin=-abs_max, vmax=abs_max)
     fig, ax = plt.subplots(figsize=figsize, dpi=100)
-    im = ax.imshow(arr, cmap="RdBu_r", norm=norm, origin="upper", aspect="auto")
+    im = ax.imshow(arr, cmap="bwr", norm=norm, origin="upper", aspect="auto")
     ax.set_title(title, fontsize=9, fontweight="bold", pad=3)
     ax.axis("off")
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)

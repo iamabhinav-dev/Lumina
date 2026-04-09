@@ -19,7 +19,8 @@ MONTH_NAMES = [
 ]
 
 COLORMAPS = {
-    "Magma (recommended)": "magma",
+    "Black & White": "Greys_r",
+    "Magma": "magma",
     "Viridis": "viridis",
     "Hot": "hot",
     "Inferno": "inferno",
