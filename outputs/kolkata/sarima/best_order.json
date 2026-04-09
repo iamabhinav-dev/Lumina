@@ -1,0 +1,28 @@
+{
+  "order": [
+    0,
+    1,
+    2
+  ],
+  "seasonal_order": [
+    0,
+    1,
+    1,
+    12
+  ],
+  "source": "grid_search",
+  "aic": 444.2206,
+  "auto_arima_order": [
+    1,
+    1,
+    1
+  ],
+  "auto_arima_seasonal": [
+    1,
+    0,
+    1,
+    12
+  ],
+  "auto_arima_aic": 576.0929,
+  "train_end": "2023-12"
+}
