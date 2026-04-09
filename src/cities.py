@@ -70,25 +70,53 @@ def get_tiff_dir(city: str, root: str) -> str:
 
 
 def get_sarima_dir(city: str, root: str) -> str:
-    """Return ``outputs/{city}/sarima/``."""
-    return os.path.join(root, "outputs", city.lower().strip(), "sarima")
+    """
+    Return the SARIMA output directory for the given city.
+
+    Kharagpur uses the legacy path ``outputs/sarima/``.
+    All other cities use ``outputs/{city}/sarima/``.
+    """
+    key = city.lower().strip()
+    if key == "kharagpur":
+        return os.path.join(root, "outputs", "sarima")
+    return os.path.join(root, "outputs", key, "sarima")
 
 
 def get_lstm_dir(city: str, root: str) -> str:
-    """Return ``outputs/{city}/lstm/``."""
-    return os.path.join(root, "outputs", city.lower().strip(), "lstm")
+    """
+    Return the LSTM output directory for the given city.
+
+    Kharagpur uses the legacy path ``outputs/lstm/``.
+    All other cities use ``outputs/{city}/lstm/``.
+    """
+    key = city.lower().strip()
+    if key == "kharagpur":
+        return os.path.join(root, "outputs", "lstm")
+    return os.path.join(root, "outputs", key, "lstm")
 
 
 def get_convlstm_dir(city: str, root: str) -> str:
-    """Return ``outputs/{city}/convlstm/``."""
-    return os.path.join(root, "outputs", city.lower().strip(), "convlstm")
+    """
+    Return the ConvLSTM output directory for the given city.
+
+    Kharagpur uses the legacy path ``outputs/convlstm/``.
+    All other cities use ``outputs/{city}/convlstm/``.
+    """
+    key = city.lower().strip()
+    if key == "kharagpur":
+        return os.path.join(root, "outputs", "convlstm")
+    return os.path.join(root, "outputs", key, "convlstm")
 
 
 def get_convlstm_model_dir(city: str, root: str) -> str:
     """
     Return the directory that holds ConvLSTM model artefacts.
 
-    ``models/convlstm/{city}/`` — one sub-folder per city so frames.npz,
-    frame_scaler.pkl, and frame_metadata.json never collide.
+    Kharagpur uses the legacy path ``models/convlstm/`` (frames.npz etc.
+    sit directly in that folder).  All other cities use
+    ``models/convlstm/{city}/``.
     """
-    return os.path.join(root, "models", "convlstm", city.lower().strip())
+    key = city.lower().strip()
+    if key == "kharagpur":
+        return os.path.join(root, "models", "convlstm")
+    return os.path.join(root, "models", "convlstm", key)
