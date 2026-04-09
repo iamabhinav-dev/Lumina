@@ -49,7 +49,6 @@ import tensorflow as tf
 from skimage.metrics import structural_similarity, peak_signal_noise_ratio
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from convlstm.build_convlstm import build_convlstm, DEFAULTS
 
 # ─── Paths / city config ─────────────────────────────────────────────────────────────────
 import argparse
@@ -83,15 +82,23 @@ os.makedirs(PLOTS_DIR, exist_ok=True)
 
 # ─── 1. Load model ────────────────────────────────────────────────────────────
 
+# Register custom metric so .keras files produced by any environment can be loaded
+@tf.keras.utils.register_keras_serializable(package="convlstm")
+def _pixel_rmse(y_true, y_pred):
+    return tf.sqrt(tf.reduce_mean(tf.square(y_true - y_pred)))
+
+
 def load_model() -> tf.keras.Model:
-    """Rebuild architecture and load trained weights."""
+    """Load full saved model (architecture + weights)."""
     for p in [MODEL_PATH, FRAMES_NPZ, SCALER_PKL]:
         if not os.path.exists(p):
             sys.exit(f"[ERROR] {p} not found. Run prior steps first.")
 
-    model = build_convlstm()
-    model.load_weights(MODEL_PATH)
-    print(f"[INFO] Loaded weights from {MODEL_PATH}")
+    model = tf.keras.models.load_model(
+        MODEL_PATH,
+        compile=False,
+    )
+    print(f"[INFO] Loaded model from {MODEL_PATH}")
     print(f"[INFO] Trainable params: {model.count_params():,}")
     return model
 

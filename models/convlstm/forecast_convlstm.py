@@ -40,6 +40,7 @@ from PIL import Image
 import rasterio
 from rasterio.transform import Affine
 import joblib
+import tensorflow as tf
 
 # ── paths / city config ────────────────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -77,11 +78,12 @@ for d in (TIFF_DIR, PLOT_DIR):
 def main():
     # ── 1. Load model ──────────────────────────────────────────────────────────
     sys.path.insert(0, os.path.join(ROOT, "models"))
-    from convlstm.build_convlstm import build_convlstm
 
-    model = build_convlstm()   # dropout=0.0 → deterministic
-    model.load_weights(MODEL_PATH)
-    print(f"[INFO] Loaded weights — Trainable params: {model.count_params():,}")
+    model = tf.keras.models.load_model(
+        MODEL_PATH,
+        compile=False,
+    )
+    print(f"[INFO] Loaded model — Trainable params: {model.count_params():,}")
 
     # ── 2. Load data & metadata ────────────────────────────────────────────────
     with open(META_PATH) as f:

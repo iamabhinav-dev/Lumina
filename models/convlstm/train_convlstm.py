@@ -41,9 +41,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+# Limit CPU thread pool — biggest lever for RAM on CPU-only machines.
+# 4 threads ≈ 4 GB RAM ceiling vs 16+ threads which can spike to 12+ GB.
+os.environ.setdefault("OMP_NUM_THREADS",              "4")
+os.environ.setdefault("TF_NUM_INTRAOP_THREADS",       "4")
+os.environ.setdefault("TF_NUM_INTEROP_THREADS",       "2")
 warnings.filterwarnings("ignore")
 
 import tensorflow as tf
+tf.config.threading.set_intra_op_parallelism_threads(4)   # threads per op
+tf.config.threading.set_inter_op_parallelism_threads(2)   # parallel ops
 from tensorflow import keras
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -60,8 +67,17 @@ import cities as _cities
 _parser = argparse.ArgumentParser()
 _parser.add_argument("--city", default="kharagpur",
                      help="City key from src/cities.py  (default: kharagpur)")
+_parser.add_argument("--filters_enc", nargs=3, type=int, default=None,
+                     metavar=("F1", "F2", "F3"),
+                     help="Encoder ConvLSTM filter counts (default: 16 32 32)")
+_parser.add_argument("--filters_dec", nargs=2, type=int, default=None,
+                     metavar=("F1", "F2"),
+                     help="Decoder ConvLSTM filter counts (default: 32 16)")
 ARGS = _parser.parse_args()
 CITY = ARGS.city.lower().strip()
+
+FILTERS_ENC = tuple(ARGS.filters_enc) if ARGS.filters_enc else DEFAULTS["filters_enc"]
+FILTERS_DEC = tuple(ARGS.filters_dec) if ARGS.filters_dec else DEFAULTS["filters_dec"]
 
 MODEL_DIR   = _cities.get_convlstm_model_dir(CITY, ROOT)
 OUTPUT_DIR  = _cities.get_convlstm_dir(CITY, ROOT)
@@ -126,10 +142,12 @@ def split_train_val(X_train, y_train):
 
 def train(X_fit, y_fit, X_val, y_val):
     print(f"\n[INFO] Building ConvLSTM model ...")
+    input_shape = tuple(X_fit.shape[1:])   # (T, H, W, C) — derived from actual data
+    print(f"[INFO] input_shape from data: {input_shape}")
     model = build_convlstm(
-        input_shape  = DEFAULTS["input_shape"],
-        filters_enc  = DEFAULTS["filters_enc"],
-        filters_dec  = DEFAULTS["filters_dec"],
+        input_shape  = input_shape,
+        filters_enc  = FILTERS_ENC,
+        filters_dec  = FILTERS_DEC,
         kernel_size  = DEFAULTS["kernel_size"],
         dropout      = DEFAULTS["dropout"],
         lr           = DEFAULTS["lr"],
@@ -173,6 +191,8 @@ def save_history(history) -> dict:
         "val_loss":     [float(v) for v in history.history["val_loss"]],
         "pixel_rmse":   [float(v) for v in history.history.get("pixel_rmse", [])],
         "val_pixel_rmse": [float(v) for v in history.history.get("val_pixel_rmse", [])],
+        "filters_enc":  list(FILTERS_ENC),
+        "filters_dec":  list(FILTERS_DEC),
     }
     with open(HISTORY_JSON, "w") as f:
         json.dump(hist, f, indent=2)
