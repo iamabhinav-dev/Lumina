@@ -239,7 +239,7 @@ def main():
             ROOT, "models", "lstm", "prepare_sequences.py"
         )
         result = subprocess.run(
-            [sys.executable, prep_script, "--window", str(saved_window)],
+            [sys.executable, prep_script, "--window", str(saved_window), "--city", CITY],
             capture_output=True, text=True,
         )
         if result.returncode != 0:
