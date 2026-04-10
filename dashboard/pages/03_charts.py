@@ -112,7 +112,7 @@ if chart_type == "Time Series":
     sel_row = df[(df["year"] == sel_year) & (df["month"] == sel_month)]
     if not sel_row.empty:
         fig.add_vline(
-            x=str(sel_row["date"].iloc[0]),
+            x=sel_row["date"].iloc[0].timestamp() * 1000,
             line_dash="dash", line_color="#2ecc71", line_width=1.5,
             annotation_text=f"{labels[selected_idx]}",
             annotation_position="top right",
@@ -318,7 +318,7 @@ elif chart_type == "Lit Area Over Time":
     sel_row = df[(df["year"] == sel_year) & (df["month"] == sel_month)]
     if not sel_row.empty:
         fig.add_vline(
-            x=str(sel_row["date"].iloc[0]),
+            x=sel_row["date"].iloc[0].timestamp() * 1000,
             line_dash="dash", line_color="#f39c12", line_width=1.5,
             annotation_text=labels[selected_idx],
         )
