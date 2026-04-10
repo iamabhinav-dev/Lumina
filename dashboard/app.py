@@ -59,6 +59,7 @@ Welcome to the VIIRS NTL (Night Time Light) analysis platform for **{cfg['displa
 | **🧠 LSTM Forecast** | Stacked LSTM with MC Dropout uncertainty, head-to-head vs SARIMA |
 | **🗺️ ConvLSTM Spatial Forecast** | Pixel-level spatial NTL maps — test evaluation + 12-month forecast with CI, GeoTIFF download |
 | **📊 City Comparison** | Side-by-side Kharagpur vs Kolkata — time series, model accuracy, spatial maps, growth |
+| **📁 Resources** | Download BTP-2 thesis report (PDF) and presentation slides (PPTX) |
 
 Use the **sidebar** to navigate between pages and select a city.
 

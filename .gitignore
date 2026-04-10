@@ -7,3 +7,18 @@ __pycache__/
 dist/
 build/
 .DS_Store
+PrevWork/
+reportImages/
+
+# LaTeX build artifacts
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.log
+report/*.out
+report/main.pdf
+report/compile.log
+report/certificate.pdf
+
+# Report figures (large binary files — stored locally only)
+report/figures/
