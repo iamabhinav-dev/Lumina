@@ -47,7 +47,7 @@ BAND        = "avg_rad"   # average DNB radiance (nW/cm²/sr)
 
 # Time range
 START_YEAR = 2014
-END_YEAR   = 2025
+END_YEAR   = 2026
 
 # City-specific values
 BBOX       = _city_cfg["bbox"]   # [min_lon, min_lat, max_lon, max_lat]

@@ -616,6 +616,39 @@ else:
             with pcols[j % 2]:
                 st.image(path, caption=label, use_container_width=True)
 
+    # ─── 2026 Validation ─────────────────────────────────────────────────────
+    st.markdown("---")
+    import json as _json3
+    _val_path3 = os.path.join(ROOT, "outputs",
+                              "" if CITY == "kharagpur" else CITY,
+                              "validation_2026.json")
+    # normalize path for kharagpur legacy
+    _val_path3 = os.path.join(os.path.dirname(_cities.get_sarima_dir(CITY, ROOT)),
+                              "validation_2026.json")
+    if os.path.exists(_val_path3):
+        with open(_val_path3) as _f3:
+            _val3 = _json3.load(_f3)
+        with st.expander("✅ 2026 Validation — Jan–Mar Actual vs ConvLSTM Forecast"):
+            _cl_rows = _val3.get("convlstm", [])
+            if _cl_rows:
+                _month_labels3 = {"2026-01-01": "Jan 2026", "2026-02-01": "Feb 2026", "2026-03-01": "Mar 2026"}
+                _tbl3 = []
+                for _cr in _cl_rows:
+                    _dot3 = "🟢" if _cr["pct_error"] < 5 else ("🟡" if _cr["pct_error"] < 10 else "🔴")
+                    _tbl3.append({"Month": _month_labels3.get(_cr["date"], _cr["date"]),
+                                  "Actual Mean": round(_cr["actual_mean"], 3),
+                                  "Forecast Mean": round(_cr["predicted_mean"], 3),
+                                  "Mean Pixel MAE": round(_cr["mae"], 3),
+                                  "% Error": f"{_dot3} {_cr['pct_error']:.2f}%"})
+                import pandas as _pd3
+                st.dataframe(_pd3.DataFrame(_tbl3), use_container_width=True, hide_index=True)
+                _mce = _val3["mean_pct_errors"].get("convlstm")
+                if _mce is not None:
+                    st.metric("3-Month Mean % Error", f"{_mce:.2f}%")
+                st.caption("Data: real VIIRS VCMSLCFG  |  Full spatial maps on page 08 Validation")
+            else:
+                st.info("ConvLSTM spatial validation not computed yet.")
+
     # Download GeoTIFFs
     st.markdown("---")
     st.markdown("#### ⬇ Download Forecast GeoTIFFs")

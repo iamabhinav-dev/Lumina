@@ -410,6 +410,31 @@ with col_right:
 
 # ─── Model info expander ─────────────────────────────────────────────────────
 
+# ─── 2026 Validation expander ──────────────────────────────────────────────
+
+import json as _json
+_val_path = os.path.join(os.path.dirname(SARIMA_DIR), "validation_2026.json")
+if os.path.exists(_val_path):
+    with open(_val_path) as _f:
+        _val = _json.load(_f)
+    with st.expander("✅ 2026 Validation — Jan to Mar (Real vs Forecast)"):
+        _rows = []
+        for _r in _val["sarima"]:
+            _dot = "🟢" if _r["pct_error"] < 5 else ("🟡" if _r["pct_error"] < 10 else "🔴")
+            _lbl = {"2026-01-01": "Jan 2026", "2026-02-01": "Feb 2026", "2026-03-01": "Mar 2026"}.get(_r["date"], _r["date"])
+            _rows.append({"Month": _lbl, "Actual": round(_r["actual"], 3),
+                          "SARIMA Pred": round(_r["predicted"], 3),
+                          "MAE": round(_r["mae"], 3),
+                          "% Error": f"{_dot} {_r['pct_error']:.2f}%"})
+        _mean_err = _val["mean_pct_errors"].get("sarima")
+        _rows.append({"Month": "**Mean**", "Actual": "—", "SARIMA Pred": "—",
+                      "MAE": "—", "% Error": f"**{_mean_err:.2f}%**"})
+        import pandas as _pd
+        st.dataframe(_pd.DataFrame(_rows), use_container_width=True, hide_index=True)
+        st.caption("🟢 < 5%  |  🟡 5–10%  |  🔴 > 10%  |  Data: real VIIRS VCMSLCFG, Jan–Mar 2026")
+
+# ─── Model info expander ─────────────────────────────────────────────────────
+
 with st.expander("ℹ️ Model Information & Limitations"):
     st.markdown(f"""
 **Model:** `{order_str}`

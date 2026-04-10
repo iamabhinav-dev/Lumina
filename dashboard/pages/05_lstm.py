@@ -500,6 +500,29 @@ This is the fundamental data-scarcity constraint.
 
 # ─── Model info expander ─────────────────────────────────────────────────────
 
+# ─── 2026 Validation expander ──────────────────────────────────────────────
+
+import json as _json2
+_val_path2 = os.path.join(os.path.dirname(LSTM_DIR), "validation_2026.json")
+if os.path.exists(_val_path2):
+    with open(_val_path2) as _f2:
+        _val2 = _json2.load(_f2)
+    with st.expander("✅ 2026 Validation — Jan to Mar (Real vs Forecast)"):
+        _rows2 = []
+        for _r2 in _val2["lstm"]:
+            _dot2 = "🟢" if _r2["pct_error"] < 5 else ("🟡" if _r2["pct_error"] < 10 else "🔴")
+            _lbl2 = {"2026-01-01": "Jan 2026", "2026-02-01": "Feb 2026", "2026-03-01": "Mar 2026"}.get(_r2["date"], _r2["date"])
+            _rows2.append({"Month": _lbl2, "Actual": round(_r2["actual"], 3),
+                           "LSTM Pred": round(_r2["predicted"], 3),
+                           "MAE": round(_r2["mae"], 3),
+                           "% Error": f"{_dot2} {_r2['pct_error']:.2f}%"})
+        _mean_err2 = _val2["mean_pct_errors"].get("lstm")
+        _rows2.append({"Month": "**Mean**", "Actual": "—", "LSTM Pred": "—",
+                       "MAE": "—", "% Error": f"**{_mean_err2:.2f}%**"})
+        import pandas as _pd2
+        st.dataframe(_pd2.DataFrame(_rows2), use_container_width=True, hide_index=True)
+        st.caption("🟢 < 5%  |  🟡 5–10%  |  🔴 > 10%  |  Data: real VIIRS VCMSLCFG, Jan–Mar 2026")
+
 with st.expander("ℹ️ Model Information & Interpretation"):
     st.markdown(f"""
 **Architecture:** Stacked LSTM — two recurrent layers + dropout regularisation

@@ -1,0 +1,88 @@
+{
+  "city": "kolkata",
+  "display": "Kolkata",
+  "generated": "2026-04-10",
+  "months": [
+    "2026-01-01",
+    "2026-02-01",
+    "2026-03-01"
+  ],
+  "best_model": "sarima",
+  "mean_pct_errors": {
+    "sarima": 16.2256,
+    "lstm": 22.7624,
+    "convlstm": 29.8769
+  },
+  "sarima": [
+    {
+      "date": "2026-01-01",
+      "actual": 20.823278,
+      "predicted": 18.131716,
+      "mae": 2.691562,
+      "pct_error": 12.9257
+    },
+    {
+      "date": "2026-02-01",
+      "actual": 21.536722,
+      "predicted": 18.344942,
+      "mae": 3.19178,
+      "pct_error": 14.8202
+    },
+    {
+      "date": "2026-03-01",
+      "actual": 22.327888,
+      "predicted": 17.65449,
+      "mae": 4.673398,
+      "pct_error": 20.9308
+    }
+  ],
+  "lstm": [
+    {
+      "date": "2026-01-01",
+      "actual": 20.823278,
+      "predicted": 16.467247,
+      "mae": 4.356031,
+      "pct_error": 20.919
+    },
+    {
+      "date": "2026-02-01",
+      "actual": 21.536722,
+      "predicted": 16.628277,
+      "mae": 4.908445,
+      "pct_error": 22.7911
+    },
+    {
+      "date": "2026-03-01",
+      "actual": 22.327888,
+      "predicted": 16.840319,
+      "mae": 5.487569,
+      "pct_error": 24.5772
+    }
+  ],
+  "convlstm": [
+    {
+      "date": "2026-01-01",
+      "actual_mean": 20.559692,
+      "predicted_mean": 29.400799,
+      "mae": 18.984249,
+      "pct_error": 43.0021,
+      "pixel_mae_npz": "outputs/kolkata/convlstm/val_pixel_mae_2026_01.npz"
+    },
+    {
+      "date": "2026-02-01",
+      "actual_mean": 21.264105,
+      "predicted_mean": 27.331472,
+      "mae": 17.923796,
+      "pct_error": 28.5334,
+      "pixel_mae_npz": "outputs/kolkata/convlstm/val_pixel_mae_2026_02.npz"
+    },
+    {
+      "date": "2026-03-01",
+      "actual_mean": 22.045258,
+      "predicted_mean": 26.034399,
+      "mae": 16.836535,
+      "pct_error": 18.0952,
+      "pixel_mae_npz": "outputs/kolkata/convlstm/val_pixel_mae_2026_03.npz"
+    }
+  ]
+}

@@ -342,3 +342,32 @@ fig_yoy.update_layout(
     margin=dict(t=40, b=40),
 )
 st.plotly_chart(fig_yoy, use_container_width=True)
+
+# ─── Section E: 2026 Live Validation ─────────────────────────────────────────
+st.divider()
+st.subheader("✅ 2026 Live Validation — Jan to Mar (Both Cities)")
+
+import json as _json_cmp
+
+_val_cols = st.columns(2)
+for _ci, _city in enumerate(CITIES):
+    _sar_dir = _cities.get_sarima_dir(_city, ROOT)
+    _vp = os.path.join(os.path.dirname(_sar_dir), "validation_2026.json")
+    with _val_cols[_ci]:
+        _cfg2 = _cities.get_city(_city)
+        st.markdown(f"**{_cfg2['display_name']}**")
+        if not os.path.exists(_vp):
+            st.info("validation_2026.json not found")
+            continue
+        with open(_vp) as _fv:
+            _vd = _json_cmp.load(_fv)
+        _errs = _vd["mean_pct_errors"]
+        _best = _vd["best_model"]
+        _ec1, _ec2, _ec3 = st.columns(3)
+        for _col, _key, _lbl in [(_ec1, "sarima", "SARIMA"), (_ec2, "lstm", "LSTM"), (_ec3, "convlstm", "ConvLSTM")]:
+            _v = _errs.get(_key)
+            _badge = " 🥇" if _key == _best else ""
+            with _col:
+                st.metric(f"{_lbl}{_badge}", f"{_v:.2f}%" if _v is not None else "N/A",
+                          help="Mean absolute % error, Jan–Mar 2026")
+st.caption("Lower is better. 🥇 = best model for each city.")

@@ -1,0 +1,88 @@
+{
+  "city": "kharagpur",
+  "display": "Kharagpur",
+  "generated": "2026-04-10",
+  "months": [
+    "2026-01-01",
+    "2026-02-01",
+    "2026-03-01"
+  ],
+  "best_model": "sarima",
+  "mean_pct_errors": {
+    "sarima": 10.0234,
+    "lstm": 17.4883,
+    "convlstm": 15.5039
+  },
+  "sarima": [
+    {
+      "date": "2026-01-01",
+      "actual": 9.15386,
+      "predicted": 8.182356,
+      "mae": 0.971504,
+      "pct_error": 10.6131
+    },
+    {
+      "date": "2026-02-01",
+      "actual": 9.46214,
+      "predicted": 8.486094,
+      "mae": 0.976046,
+      "pct_error": 10.3153
+    },
+    {
+      "date": "2026-03-01",
+      "actual": 8.869257,
+      "predicted": 8.05846,
+      "mae": 0.810797,
+      "pct_error": 9.1417
+    }
+  ],
+  "lstm": [
+    {
+      "date": "2026-01-01",
+      "actual": 9.15386,
+      "predicted": 7.616909,
+      "mae": 1.536951,
+      "pct_error": 16.7902
+    },
+    {
+      "date": "2026-02-01",
+      "actual": 9.46214,
+      "predicted": 7.389938,
+      "mae": 2.072202,
+      "pct_error": 21.8999
+    },
+    {
+      "date": "2026-03-01",
+      "actual": 8.869257,
+      "predicted": 7.647529,
+      "mae": 1.221728,
+      "pct_error": 13.7749
+    }
+  ],
+  "convlstm": [
+    {
+      "date": "2026-01-01",
+      "actual_mean": 9.15386,
+      "predicted_mean": 7.743187,
+      "mae": 5.90836,
+      "pct_error": 15.4107,
+      "pixel_mae_npz": "outputs/convlstm/val_pixel_mae_2026_01.npz"
+    },
+    {
+      "date": "2026-02-01",
+      "actual_mean": 9.46214,
+      "predicted_mean": 7.738457,
+      "mae": 5.879035,
+      "pct_error": 18.2166,
+      "pixel_mae_npz": "outputs/convlstm/val_pixel_mae_2026_02.npz"
+    },
+    {
+      "date": "2026-03-01",
+      "actual_mean": 8.869257,
+      "predicted_mean": 7.726496,
+      "mae": 5.065363,
+      "pct_error": 12.8845,
+      "pixel_mae_npz": "outputs/convlstm/val_pixel_mae_2026_03.npz"
+    }
+  ]
+}
