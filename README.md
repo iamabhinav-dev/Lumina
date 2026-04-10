@@ -46,7 +46,7 @@ The project was originally developed as a Bachelor's Thesis Project (BTP) focusi
 
 The dashboard is deployed on Streamlit Community Cloud:
 
-> **[https://lumina-mdpcdj4ygowcnwp7euyof3.streamlit.app](https://lumina-mdpcdj4ygowcnwp7euyof3.streamlit.app)**  
+> **[https://lumina-iamabhinav-dev.streamlit.app/](https://lumina-iamabhinav-dev.streamlit.app/)**  
 > *(Select a city from the sidebar to begin)*
 
 ---
