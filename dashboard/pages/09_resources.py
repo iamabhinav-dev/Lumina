@@ -65,19 +65,21 @@ st.markdown(
     "Abhinav Kumar Singh · IIT Kharagpur · April 2026"
 )
 
-PPT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "BTP-2-Presentation.pptx")
+PPT_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "BTP-PPT.pdf")
 
 if os.path.exists(PPT_PATH):
+    pdf_download_button(PPT_PATH, "Download Presentation (PDF)", "BTP-2-Presentation.pdf")
+
+    st.markdown("#### Preview")
     with open(PPT_PATH, "rb") as f:
-        ppt_data = f.read()
-    st.download_button(
-        label="⬇️ Download Presentation (PPTX)",
-        data=ppt_data,
-        file_name="BTP-2-Presentation.pptx",
-        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        base64_ppt = base64.b64encode(f.read()).decode("utf-8")
+    ppt_display = (
+        f'<iframe src="data:application/pdf;base64,{base64_ppt}" '
+        f'width="100%" height="800px" type="application/pdf"></iframe>'
     )
+    st.markdown(ppt_display, unsafe_allow_html=True)
 else:
     st.info(
         "Presentation not uploaded yet.  \n"
-        "Place `BTP-2-Presentation.pptx` in `dashboard/assets/` to enable the download."
+        "Place `BTP-PPT.pdf` in `dashboard/assets/` to enable the preview."
     )

@@ -22,3 +22,8 @@ report/certificate.pdf
 
 # Report figures (large binary files — stored locally only)
 report/figures/
+
+# Report source and plan files
+report/main.tex
+report/references.bib
+REPORT_PLAN.md
