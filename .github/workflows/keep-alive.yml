@@ -1,0 +1,15 @@
+name: Keep Alive
+
+on:
+  schedule:
+    # Runs every 20 minutes
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit app
+        run: |
+          curl -s -o /dev/null -w "HTTP %{http_code}" https://lumina-iamabhinav-dev.streamlit.app
